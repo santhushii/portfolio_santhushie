@@ -17,11 +17,23 @@ const navLinks = [
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [activeSection, setActiveSection] = useState('home');
   const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
+      
+      const sections = navLinks.map(link => link.path.replace('#', ''));
+      for (const section of sections) {
+        const element = document.getElementById(section);
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          if (rect.top <= 100 && rect.bottom >= 100) {
+            setActiveSection(section);
+          }
+        }
+      }
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
@@ -31,7 +43,16 @@ const Navbar: React.FC = () => {
     setIsOpen(false);
     const element = document.getElementById(id.replace('#', ''));
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+      const offset = 80;
+      const bodyRect = document.body.getBoundingClientRect().top;
+      const elementRect = element.getBoundingClientRect().top;
+      const elementPosition = elementRect - bodyRect;
+      const offsetPosition = elementPosition - offset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
     }
   };
 
@@ -56,29 +77,42 @@ const Navbar: React.FC = () => {
           </Link>
 
           {/* Desktop Menu */}
-          <div className="hidden lg:flex items-center space-x-1">
-            {navLinks.map((link) => (
-              <a
-                key={link.path}
-                href={link.path}
-                onClick={(e) => {
-                  e.preventDefault();
-                  scrollToSection(link.path);
-                }}
-                className="px-5 py-2 text-sm font-semibold text-gray-300 hover:text-white transition-all rounded-full hover:bg-white/5"
-              >
-                {link.label}
-              </a>
-            ))}
-            <div className="ml-4 pl-4 border-l border-white/10">
-              <a 
-                href="/Santhushie_Nallaperuma.pdf" 
-                download
-                className="btn-premium py-2 px-6 text-sm"
-              >
-                Download CV
-              </a>
-            </div>
+          <div className="hidden lg:flex items-center glass p-2 rounded-full border border-white/10 shadow-2xl gap-1">
+            {navLinks.map((link) => {
+              const isActive = activeSection === link.path.replace('#', '');
+              return (
+                <a
+                  key={link.path}
+                  href={link.path}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    scrollToSection(link.path);
+                  }}
+                  className={`relative px-8 py-3 text-[11px] font-black uppercase tracking-widest transition-all duration-500 rounded-full ${
+                    isActive ? 'text-white' : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="active-pill"
+                      className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full -z-10 shadow-lg shadow-purple-500/40"
+                      transition={{ type: 'spring', duration: 0.6 }}
+                    />
+                  )}
+                  {link.label}
+                </a>
+              );
+            })}
+          </div>
+
+          <div className="hidden lg:block ml-4">
+            <a 
+              href="/Santhushie_Nallaperuma.pdf" 
+              download
+              className="btn-premium py-3 px-8 text-xs font-bold uppercase tracking-widest"
+            >
+              Resume
+            </a>
           </div>
 
           {/* Mobile Menu Button */}
@@ -97,34 +131,56 @@ const Navbar: React.FC = () => {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="lg:hidden absolute top-full left-0 right-0 glass border-t border-white/10 overflow-hidden"
+            initial={{ opacity: 0, x: '100%' }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="lg:hidden fixed inset-0 z-[60] bg-black/95 backdrop-blur-xl p-8 flex flex-col justify-center items-center text-center"
           >
-            <div className="container-max px-4 py-8 flex flex-col space-y-4">
-              {navLinks.map((link) => (
-                <a
-                  key={link.path}
-                  href={link.path}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    scrollToSection(link.path);
-                  }}
-                  className="text-2xl font-bold text-gray-400 hover:text-white transition-colors"
-                >
-                  {link.label}
-                </a>
-              ))}
-              <div className="pt-4 mt-4 border-t border-white/10">
+            <button
+              onClick={() => setIsOpen(false)}
+              className="absolute top-6 right-6 p-2 text-white/50 hover:text-white transition-colors"
+            >
+              <HiX className="w-10 h-10" />
+            </button>
+            
+            <div className="flex flex-col space-y-6">
+              {navLinks.map((link, i) => {
+                const isActive = activeSection === link.path.replace('#', '');
+                return (
+                  <motion.a
+                    key={link.path}
+                    href={link.path}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      scrollToSection(link.path);
+                    }}
+                    className={`text-4xl font-black tracking-tighter transition-all ${
+                      isActive ? 'text-white scale-110' : 'text-gray-500 hover:text-white'
+                    }`}
+                  >
+                    {link.label}
+                  </motion.a>
+                );
+              })}
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: navLinks.length * 0.05 }}
+                className="pt-8"
+              >
                  <a 
                   href="/Santhushie_Nallaperuma.pdf" 
                   download
-                  className="btn-premium w-full text-center"
+                  onClick={() => setIsOpen(false)}
+                  className="btn-premium py-4 px-10 text-xl inline-block"
                 >
-                  Download CV
+                  Resume
                 </a>
-              </div>
+              </motion.div>
             </div>
           </motion.div>
         )}
